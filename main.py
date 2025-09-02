@@ -1,8 +1,7 @@
-from scipy import stats
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
 from typing import List
-app = FastAPI()
+
 
 class Receita(BaseModel):
     nome: str
@@ -10,10 +9,10 @@ class Receita(BaseModel):
     modo_de_preparo: str
 
 
-receitas: List[Receita] = []
+app = FastAPI()
 
 
-'''receitas = [
+receitas: List[Receita] = [
     {
         'nome': 'Brownie',
         'ingredientes': [
@@ -22,12 +21,6 @@ receitas: List[Receita] = []
             '1/2 xícara (chá) de chocolate em pó',
             '100g de manteiga',
             '1 xícara (chá) de farinha de trigo'
-        ],
-        'utensílios': [
-            'Tigela',
-            'Forma',
-            'Colher de pau',
-            'Forno'
         ],
         'modo_de_preparo': 'Misture todos os ingredientes em uma tigela, coloque a massa em uma forma untada e leve ao forno pré-aquecido a 180°C por cerca de 30 minutos.'
     },
@@ -41,36 +34,37 @@ receitas: List[Receita] = []
             '1 xícara (chá) de leite',
             '1 colher (sopa) de fermento em pó'
         ],
-        'utensílios': [
-            'Tigela',
-            'Forma',
-            'Batedeira ou fouet',
-            'Forno'
-        ],
         'modo_de_preparo': 'Bata os ovos com o açúcar, adicione os demais ingredientes e misture bem. Coloque em uma forma untada e leve ao forno a 180°C por cerca de 40 minutos.'
     }
-]'''
-
-@app.get("/receitas")
-def listar_receitas():
-            return receitas
+]
 
 
-@app.get("/receitas/{nome}")
+
+@app.get("/receitas/{nome}", response_model=Receita)
 def buscar_receita(nome: str):
+    """
+    Busca uma receita por nome, ignorando maiúsculas e minúsculas.
+    """
     for receita in receitas:
-        if receita['nome'].lower() == nome.lower():
-         return receita
-    return {"erro": "Receita não encontrada"}
+        if receita.nome.lower() == nome.lower():
+            return receita
+    
 
-@app.get("/receitas/")
-def get_todas_receitas():
+    raise HTTPException(status_code=404, detail="Receita não encontrada")
+
+
+@app.get("/receitas", response_model=List[Receita])
+def listar_receitas():
+    """
+    Retorna a lista completa de receitas.
+    """
     return receitas
 
 @app.post("/receitas", response_model=Receita, status_code=status.HTTP_201_CREATED)
-def criar_receitas(dados: Receita):
+def criar_receita(dados: Receita):
+    """
+    Cria uma nova receita e a adiciona à lista.
+    """
+    receitas.append(dados)
+    return dados
 
-    nova_receita = dados
-    receitas.append(nova_receita)
-
-    return nova_receita
